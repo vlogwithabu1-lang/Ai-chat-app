@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniAI - NextGen AI Assistant</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#0f172a',
+                            violet: '#8b5cf6',
+                            emerald: '#10b981'
+                        },
+                        darkbg: {
+                            main: '#0a0d14',
+                            sidebar: '#111622',
+                            card: '#1a202c',
+                            input: '#151b28',
+                            border: '#262f40'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & Lucide Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262f40;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.4);
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+        
+        pre code {
+            border-radius: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .pulse-mic {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="bg-darkbg-main text-gray-100 font-sans h-screen flex overflow-hidden">
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/60 z-20 hidden lg:hidden backdrop-blur-sm" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed lg:relative z-30 w-72 h-full bg-darkbg-sidebar border-r border-darkbg-border flex flex-col justify-between transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <!-- Sidebar Top -->
+        <div class="p-4 flex flex-col h-full">
+            <!-- App Logo & Title -->
+            <div class="flex items-center justify-between mb-6 px-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 via-brand-violet to-emerald-400 flex items-center justify-center glow-effect">
+                        <i class="fa-solid font-bold text-white text-lg fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+                            OmniAI Pro
+                        </h1>
+                        <span class="text-[10px] text-gray-400 block -mt-1">Gemini & Claude Fusion</span>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- New Chat Button -->
+            <button onclick="createNewChat()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-brand-violet hover:from-brand-500 hover:to-violet-500 text-white font-medium flex items-center justify-center space-x-2 transition-all duration-200 shadow-lg glow-effect mb-4">
+                <i class="fa-solid fa-plus text-sm"></i>
+                <span>പുതിയ ചാറ്റ് (New Chat)</span>
+            </button>
+
+            <!-- Quick Features Nav -->
+            <div class="space-y-1 mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">
+                <span>നിങ്ങളുടെ സംഭാഷണങ്ങൾ</span>
+            </div>
+
+            <!-- Chat History List -->
+            <div id="chat-history" class="flex-1 overflow-y-auto space-y-1 pr-1">
+                <!-- Chat history items dynamic loading -->
+            </div>
+
+            <!-- Bottom Actions / Settings -->
+            <div class="pt-4 border-t border-darkbg-border space-y-2">
+                <button onclick="openSettingsModal()" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-darkbg-input rounded-lg flex items-center space-x-3 transition">
+                    <i class="fa-solid fa-key text-brand-500"></i>
+                    <span>API ക്രമീകരണങ്ങൾ (API Key)</span>
+                </button>
+                <button onclick="clearAllChats()" class="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg flex items-center space-x-3 transition">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>എല്ലാം ഡിലീറ്റ് ചെയ്യുക</span>
+                </button>
+                <div class="px-3 py-3 rounded-xl bg-darkbg-input border border-darkbg-border flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-semibold text-white truncate">ശ്രീ ഉപയോക്താവ് (User)</p>
+                        <p class="text-[10px] text-emerald-400 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ഓൺലൈൻ (Online)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- API Key Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-darkbg-card border border-darkbg-border rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brand-500"></i> Gemini API Key സജ്ജീകരിക്കുക
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mb-4">
+                നിങ്ങളുടെ സ്വന്തം Gemini API കീ നൽകാം. നൽകിയില്ലെങ്കിൽ സിസ്റ്റം ഡിഫോൾട്ട് കീ ഉപയോഗിച്ച് പ്രവർത്തിക്കും.
+            </p>
+            <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-darkbg-input border border-darkbg-border rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none mb-4">
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 bg-darkbg-input hover:bg-darkbg-border text-gray-300 text-xs rounded-xl transition">റദ്ദാക്കുക</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl transition">സേവ് ചെയ്യുക</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full bg-darkbg-main relative overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-16 border-b border-darkbg-border flex items-center justify-between px-4 bg-darkbg-main/80 backdrop-blur z-10">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-300 hover:text-white p-2 rounded-lg bg-darkbg-card border border-darkbg-border">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <span id="current-chat-title" class="font-semibold text-gray-200 text-sm md:text-base truncate max-w-[200px] sm:max-w-xs">
+                        നമസ്കാരം! എന്ത് അറിയണം?
+                    </span>
+                    <span class="bg-brand-500/10 text-brand-500 text-xs px-2 py-0.5 rounded-full border border-brand-500/20 hidden sm:inline-block">
+                        Gemini-3 Flash
+                    </span>
+                </div>
+            </div>
+
+            <!-- Header Right Quick Utility Tools -->
+            <div class="flex items-center space-x-2">
+                <button onclick="speakLastResponse()" title="Read last answer" class="p-2.5 rounded-xl bg-darkbg-card border border-darkbg-border text-gray-300 hover:text-white hover:border-brand-500 transition">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="exportChat()" title="Download Chat History" class="p-2.5 rounded-xl bg-darkbg-card border border-darkbg-border text-gray-300 hover:text-white hover:border-brand-500 transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
+            
+            <!-- Hero Welcome Screen (Shown when chat is empty) -->
+            <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center px-4 max-w-3xl mx-auto py-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 via-violet-600 to-pink-500 flex items-center justify-center text-2xl text-white shadow-2xl mb-6 glow-effect">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <h2 class="text-2xl md:text-4xl font-extrabold text-white mb-3 tracking-tight">
+                    ലോകത്തിലെ ഏത് ചോദ്യത്തിനും ഉത്തരം നൽകുന്ന <span class="bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">OmniAI</span>
+                </h2>
+                <p class="text-gray-400 text-sm md:text-base mb-8 max-w-xl">
+                    ചോദ്യങ്ങൾ ചോദിക്കുക, കോഡിംഗ് സംശയങ്ങൾ തീർക്കുക, ഫോട്ടോകൾ അപഗ്രഥിക്കുക, ശബ്ദത്തിൽ സംസാരിക്കുക. എന്തിനും കൺചിമ്മുന്ന വേഗത്തിൽ മറുപടി!
+                </p>
+
+                <!-- Starter Prompt Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl text-left">
+                    <div onclick="setPrompt('കേരളത്തിലെ ഏറ്റവും പ്രധാനപ്പെട്ട 5 വിനോദസഞ്ചാര കേന്ദ്രങ്ങൾ ഏതെല്ലാം? подроб വിയവരങ്ങൾ നൽകുക.')" class="p-4 rounded-xl bg-darkbg-card border border-darkbg-border hover:border-brand-500/50 hover:bg-darkbg-input cursor-pointer transition group">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-brand-500 font-semibold">യാത്ര & ടൂറിസം</span>
+                            <i class="fa-solid fa-compass text-gray-500 group-hover:text-brand-500 transition"></i>
+                        </div>
+                        <p class="text-xs text-gray-300">കേരളത്തിലെ മികച്ച 5 വിനോദസഞ്ചാര കേന്ദ്രങ്ങൾ ഏതെല്ലാം?</p>
+                    </div>
+
+                    <div onclick="setPrompt('ഒരു ഫുൾസ്റ്റാക്ക് വെബ്സൈറ്റ് നിർമ്മിക്കാൻ പഠിക്കേണ്ട പടവുകൾ (Roadmap) പറയുക.')" class="p-4 rounded-xl bg-darkbg-card border border-darkbg-border hover:border-violet-500/50 hover:bg-darkbg-input cursor-pointer transition group">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-violet-400 font-semibold">കോഡിംഗ് / പ്രോഗ്രാമിംഗ്</span>
+                            <i class="fa-solid fa-code text-gray-500 group-hover:text-violet-400 transition"></i>
+                        </div>
+                        <p class="text-xs text-gray-300">ഒരു ഫുൾസ്റ്റാക്ക് വെബ് ഡെവലപ്പർ ആവാനുള്ള വഴികൾ</p>
+                    </div>
+
+                    <div onclick="setPrompt('Explain quantum computing in simple Malayalam with examples.')" class="p-4 rounded-xl bg-darkbg-card border border-darkbg-border hover:border-emerald-500/50 hover:bg-darkbg-input cursor-pointer transition group">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-emerald-400 font-semibold">സയൻസ് & ടെക്നോളജി</span>
+                            <i class="fa-solid fa-atom text-gray-500 group-hover:text-emerald-400 transition"></i>
+                        </div>
+                        <p class="text-xs text-gray-300">ക്വാണ്ടം കമ്പ്യൂട്ടിംഗ് ലളിതമായി വിശദീകരിക്കുക</p>
+                    </div>
+
+                    <div onclick="setPrompt('ജീവിതത്തിൽ വിജയിക്കാൻ സഹായിക്കുന്ന 5 പ്രധാന സൂത്രവാക്യങ്ങൾ കോട്ട് സഹിതം നൽകുക.')" class="p-4 rounded-xl bg-darkbg-card border border-darkbg-border hover:border-pink-500/50 hover:bg-darkbg-input cursor-pointer transition group">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-pink-400 font-semibold">ലൈഫ് മോട്ടിവേഷൻ</span>
+                            <i class="fa-solid fa-lightbulb text-gray-500 group-hover:text-pink-400 transition"></i>
+                        </div>
+                        <p class="text-xs text-gray-300">ജീവിതവിജയത്തിനുള്ള മികച്ച 5 നുറുങ്ങുകൾ</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Streamed Here -->
+            <div id="messages-list" class="space-y-6 max-w-4xl mx-auto"></div>
+
+        </div>
+
+        <!-- Input Bar Section -->
+        <div class="p-3 md:p-4 border-t border-darkbg-border bg-darkbg-main/90 backdrop-blur z-10">
+            <div class="max-w-4xl mx-auto">
+
+                <!-- Image Attachment Preview Box -->
+                <div id="image-preview-container" class="hidden mb-3 relative inline-block">
+                    <img id="image-preview" src="" alt="Attachment Preview" class="h-20 w-auto rounded-lg border border-brand-500 shadow-md object-cover">
+                    <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hover:bg-red-700 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Main Input Wrapper -->
+                <div class="relative bg-darkbg-input border border-darkbg-border focus-within:border-brand-500/80 rounded-2xl shadow-xl transition-all duration-200">
+                    
+                    <!-- Text Area -->
+                    <textarea 
+                        id="user-input" 
+                        rows="1" 
+                        placeholder="എന്തും ചോദിക്കാം... (Ask anything)..." 
+                        class="w-full bg-transparent text-gray-100 placeholder-gray-500 p-4 pr-32 focus:outline-none resize-none max-h-40 text-sm md:text-base"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResizeTextarea(this)"></textarea>
+
+                    <!-- Bottom Right Tools inside Input Box -->
+                    <div class="absolute right-3 bottom-3 flex items-center space-x-2">
+                        
+                        <!-- File Upload Button -->
+                        <label for="file-upload" class="p-2 text-gray-400 hover:text-brand-400 hover:bg-darkbg-card rounded-xl cursor-pointer transition" title="Attach Image">
+                            <i class="fa-solid fa-paperclip text-lg"></i>
+                            <input type="file" id="file-upload" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                        </label>
+
+                        <!-- Voice Record Button -->
+                        <button id="mic-btn" onclick="toggleVoiceInput()" class="p-2 text-gray-400 hover:text-red-400 hover:bg-darkbg-card rounded-xl transition" title="Voice Search (മൈക്ക്)">
+                            <i class="fa-solid fa-microphone text-lg"></i>
+                        </button>
+
+                        <!-- Send Button -->
+                        <button id="send-btn" onclick="sendMessage()" class="p-2.5 bg-gradient-to-r from-brand-600 to-brand-violet hover:from-brand-500 hover:to-violet-500 text-white rounded-xl shadow-lg glow-effect transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i id="send-icon" class="fa-solid fa-paper-plane text-sm"></i>
+                            <i id="loading-icon" class="fa-solid fa-spinner fa-spin text-sm hidden"></i>
+                        </button>
+                    </div>
+
+                    <!-- Plus Quick Menu Dropup -->
+                    <div class="absolute left-3 bottom-3">
+                        <button id="plus-menu-btn" onclick="togglePlusMenu()" class="p-2 text-gray-400 hover:text-white hover:bg-darkbg-card rounded-xl transition">
+                            <i class="fa-solid fa-circle-plus text-lg"></i>
+                        </button>
+
+                        <!-- Dropup Popup -->
+                        <div id="plus-menu" class="hidden absolute bottom-12 left-0 w-48 bg-darkbg-card border border-darkbg-border rounded-xl shadow-2xl p-2 z-50 space-y-1">
+                            <button onclick="insertTemplate('ഭാഷാന്തരം ചെയ്യുക (Translate to Malayalam): ')" class="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-darkbg-input rounded-lg flex items-center space-x-2">
+                                <i class="fa-solid fa-language text-brand-500"></i>
+                                <span>മലയാളത്തിലേക്ക് മാറ്റുക</span>
+                            </button>
+                            <button onclick="insertTemplate('ഏതാനും വരികളിൽ സമ്മറി (Summary) നൽകുക: ')" class="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-darkbg-input rounded-lg flex items-center space-x-2">
+                                <i class="fa-solid fa-compress text-violet-400"></i>
+                                <span>ചുരുക്കി എഴുതുക (Summary)</span>
+                            </button>
+                            <button onclick="insertTemplate('ഈ കോഡിലെ തെറ്റുകൾ തിരുത്തി വിശദീകരിക്കുക: ')" class="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-darkbg-input rounded-lg flex items-center space-x-2">
+                                <i class="fa-solid fa-bug text-red-400"></i>
+                                <span>കോഡ് ബഗ് തിരുത്തുക</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-gray-500 mt-2 px-1">
+                    <span>Gemini Pro Ultra Vision AI Engine</span>
+                    <span>Shift + Enter ഫോർ ന്യൂ ലൈൻ</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        // App State
+        let currentChatId = null;
+        let chats = JSON.parse(localStorage.getItem('omni_ai_chats') || '[]');
+        let selectedImageData = null;
+        let isRecording = false;
+        let recognition = null;
+        let lastAiResponse = "";
+        let customApiKey = localStorage.getItem('omni_custom_api_key') || '';
+
+        // API Setup Helper
+        function getActiveApiKey() {
+            return customApiKey.trim() !== '' ? customApiKey : '';
+        }
+
+        function openSettingsModal() {
+            document.getElementById('api-key-input').value = customApiKey;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            customApiKey = document.getElementById('api-key-input').value.trim();
+            localStorage.setItem('omni_custom_api_key', customApiKey);
+            closeSettingsModal();
+            alert("API കീ വിജയകരമായി സേവ് ചെയ്തു!");
+        }
+
+        // Initialize Speech Recognition if supported
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'ml-IN'; // Default Malayalam, can switch to en-US
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('user-input').value += transcript;
+                stopVoiceInput();
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech Error: ", event.error);
+                stopVoiceInput();
+            };
+
+            recognition.onend = () => {
+                stopVoiceInput();
+            };
+        }
+
+        // Window Load Initialization
+        window.onload = () => {
+            renderChatHistory();
+            if (chats.length > 0) {
+                loadChat(chats[0].id);
+            } else {
+                createNewChat();
+            }
+        };
+
+        // Create New Chat
+        function createNewChat() {
+            const newChat = {
+                id: Date.now().toString(),
+                title: "പുതിയ സംഭാഷണം",
+                messages: [],
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            chats.unshift(newChat);
+            saveChats();
+            renderChatHistory();
+            loadChat(newChat.id);
+        }
+
+        // Save to LocalStorage
+        function saveChats() {
+            localStorage.setItem('omni_ai_chats', JSON.stringify(chats));
+        }
+
+        // Render Sidebar Chat History List
+        function renderChatHistory() {
+            const historyContainer = document.getElementById('chat-history');
+            historyContainer.innerHTML = '';
+
+            chats.forEach(chat => {
+                const isActive = chat.id === currentChatId;
+                const item = document.createElement('div');
+                item.className = `group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${
+                    isActive ? 'bg-gradient-to-r from-brand-600/20 to-violet-600/20 border border-brand-500/30 text-white font-medium' : 'text-gray-400 hover:bg-darkbg-input hover:text-gray-200'
+                }`;
+                
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden flex-1" onclick="loadChat('${chat.id}')">
+                        <i class="fa-regular fa-message text-xs ${isActive ? 'text-brand-400' : 'text-gray-500'}"></i>
+                        <span class="text-xs truncate max-w-[140px]">${escapeHtml(chat.title)}</span>
+                    </div>
+                    <button onclick="deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 transition">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                `;
+                historyContainer.appendChild(item);
+            });
+        }
+
+        // Load Active Chat
+        function loadChat(chatId) {
+            currentChatId = chatId;
+            renderChatHistory();
+
+            const chat = chats.find(c => c.id === chatId);
+            const messagesList = document.getElementById('messages-list');
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const chatTitle = document.getElementById('current-chat-title');
+
+            if (!chat) return;
+
+            chatTitle.textContent = chat.title;
+            messagesList.innerHTML = '';
+
+            if (chat.messages.length === 0) {
+                welcomeScreen.classList.remove('hidden');
+            } else {
+                welcomeScreen.classList.add('hidden');
+                chat.messages.forEach(msg => {
+                    appendMessageToDOM(msg.role, msg.text, msg.image);
+                });
+                scrollToBottom();
+            }
+        }
+
+        // Delete Chat
+        function deleteChat(event, chatId) {
+            event.stopPropagation();
+            chats = chats.filter(c => c.id !== chatId);
+            saveChats();
+            if (chats.length > 0) {
+                if (currentChatId === chatId) {
+                    loadChat(chats[0].id);
+                } else {
+                    renderChatHistory();
+                }
+            } else {
+                createNewChat();
+            }
+        }
+
+        // Clear All Chats
+        function clearAllChats() {
+            if (confirm("തീർച്ചയാണോ? എല്ലാ ചാറ്റ് ഹിസ്റ്ററിയും നശിച്ചുപോകും!")) {
+                chats = [];
+                localStorage.removeItem('omni_ai_chats');
+                createNewChat();
+            }
+        }
+
+        // Auto Resize Textarea
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+        }
+
+        // Key Press Handling (Enter to send)
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // File Upload Handler
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedImageData = e.target.result;
+                document.getElementById('image-preview').src = selectedImageData;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Remove Selected Image
+        function removeImage() {
+            selectedImageData = null;
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('file-upload').value = '';
+        }
+
+        // Toggle Voice Input
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert("നിങ്ങളുടെ ബ്രൗസർ വോയ്‌സ് റെക്കഗ്നിഷൻ സപ്പോർട്ട് ചെയ്യുന്നില്ല!");
+                return;
+            }
+
+            const micBtn = document.getElementById('mic-btn');
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isRecording = true;
+                micBtn.classList.add('text-red-500', 'pulse-mic');
+            }
+        }
+
+        function stopVoiceInput() {
+            isRecording = false;
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.remove('text-red-500', 'pulse-mic');
+        }
+
+        // Toggle Plus Menu
+        function togglePlusMenu() {
+            const menu = document.getElementById('plus-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Insert Prompt Template
+        function insertTemplate(template) {
+            const input = document.getElementById('user-input');
+            input.value = template + input.value;
+            input.focus();
+            togglePlusMenu();
+        }
+
+        // Set Starter Prompt
+        function setPrompt(text) {
+            document.getElementById('user-input').value = text;
+            sendMessage();
+        }
+
+        // Send User Message
+        async function sendMessage() {
+            const inputEl = document.getElementById('user-input');
+            const promptText = inputEl.value.trim();
+            const imageToSend = selectedImageData;
+
+            if (!promptText && !imageToSend) return;
+
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+
+            // Hide Welcome Screen
+            document.getElementById('welcome-screen').classList.add('hidden');
+
+            // Update Title if First Message
+            if (chat.messages.length === 0) {
+                chat.title = promptText.length > 25 ? promptText.substring(0, 25) + '...' : promptText;
+                document.getElementById('current-chat-title').textContent = chat.title;
+                renderChatHistory();
+            }
+
+            // User Message Object
+            const userMsg = { role: 'user', text: promptText, image: imageToSend };
+            chat.messages.push(userMsg);
+            appendMessageToDOM('user', promptText, imageToSend);
+
+            // Clear Input Area
+            inputEl.value = '';
+            inputEl.style.height = 'auto';
+            removeImage();
+            scrollToBottom();
+
+            // UI Loading state
+            setLoading(true);
+
+            // Prepare AI Placeholder DOM Message
+            const aiMsgId = 'ai-msg-' + Date.now();
+            appendMessageToDOM('model', '', null, aiMsgId);
+
+            try {
+                // Call Gemini API
+                const aiResponseText = await callGeminiApi(chat.messages, promptText, imageToSend);
+                
+                // Store Response
+                chat.messages.push({ role: 'model', text: aiResponseText });
+                saveChats();
+                lastAiResponse = aiResponseText;
+
+                // Update DOM Stream/Render
+                const messageBox = document.getElementById(aiMsgId);
+                if (messageBox) {
+                    messageBox.innerHTML = marked.parse(aiResponseText);
+                    highlightCodeBlocks(messageBox);
+                }
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                const messageBox = document.getElementById(aiMsgId);
+                if (messageBox) {
+                    messageBox.innerHTML = `<span class="text-red-400">ക്ഷമിക്കണം, ഒരു തകരാർ സംഭവിച്ചു. വീണ്ടും ശ്രമിക്കുക. (${error.message})</span>`;
+                }
+            } finally {
+                setLoading(false);
+                scrollToBottom();
+            }
+        }
+
+        // Call Gemini API Function
+        async function callGeminiApi(historyMessages, promptText, imageData) {
+            const activeKey = getActiveApiKey();
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeKey}`;
+
+            // Build Payload Parts
+            const contentsPayload = [];
+
+            // Add previous history context (up to last 8 turns)
+            const slicedHistory = historyMessages.slice(-8);
+            slicedHistory.forEach(msg => {
+                const parts = [];
+                if (msg.text) parts.push({ text: msg.text });
+                if (msg.image) {
+                    const base64Data = msg.image.split(',')[1];
+                    const mimeType = msg.image.substring(msg.image.indexOf(':') + 1, msg.image.indexOf(';'));
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data
+                        }
+                    });
+                }
+                contentsPayload.push({
+                    role: msg.role === 'user' ? 'user' : 'model',
+                    parts: parts
+                });
+            });
+
+            const systemInstruction = {
+                parts: [{
+                    text: "You are OmniAI, an exceptionally intelligent, helpful, multi-lingual AI assistant. You excel at answering questions accurately in Malayalam and English based on user query language. For coding questions, provide neat syntax-highlighted code blocks. Give clear, well-structured, fast answers."
+                }]
+            };
+
+            const payload = {
+                contents: contentsPayload,
+                systemInstruction: systemInstruction,
+                tools: [{ "google_search": {} }]
+            };
+
+            // Fetch Call with Exponential Backoff
+            let response, data;
+            let delays = [1000, 2000, 4000];
+            
+            for (let i = 0; i <= delays.length; i++) {
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        data = await response.json();
+                        break;
+                    }
+                } catch (e) {
+                    if (i === delays.length) throw e;
+                }
+                if (i < delays.length) await new Promise(res => setTimeout(res, delays[i]));
+            }
+
+            const candidate = data?.candidates?.[0];
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                return candidate.content.parts[0].text;
+            } else {
+                throw new Error("മറുപടി ലഭിച്ചില്ല.");
+            }
+        }
+
+        // Append Message Component to Screen
+        function appendMessageToDOM(role, text, image = null, customId = null) {
+            const messagesList = document.getElementById('messages-list');
+            const isUser = role === 'user';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex gap-3 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`;
+
+            let avatarHtml = isUser ? 
+                `<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-500 to-emerald-400 flex items-center justify-center text-white text-xs font-bold shadow flex-shrink-0">
+                    You
+                </div>` : 
+                `<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 via-violet-600 to-pink-500 flex items-center justify-center text-white text-xs font-bold shadow flex-shrink-0 glow-effect">
+                    <i class="fa-solid fa-brain"></i>
+                </div>`;
+
+            let imageHtml = image ? `<img src="${image}" class="max-w-xs max-h-48 rounded-lg mb-2 border border-darkbg-border object-cover">` : '';
+
+            let contentBody = isUser ? 
+                `<div class="bg-brand-600 text-white p-3.5 px-4 rounded-2xl rounded-tr-none text-sm leading-relaxed max-w-lg shadow-lg">
+                    ${imageHtml}
+                    <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
+                </div>` : 
+                `<div class="bg-darkbg-card border border-darkbg-border p-4 rounded-2xl rounded-tl-none text-sm text-gray-200 leading-relaxed max-w-2xl shadow-lg w-full">
+                    <div id="${customId || 'ai-text'}" class="prose prose-invert max-w-none text-sm space-y-2">
+                        ${text ? marked.parse(text) : '<i class="fa-solid fa-circle-notch fa-spin text-brand-400 text-base"></i> ചിന്തിക്കുന്നു... (Thinking...)'}
+                    </div>
+                </div>`;
+
+            msgDiv.innerHTML = isUser ? `${contentBody}${avatarHtml}` : `${avatarHtml}${contentBody}`;
+            messagesList.appendChild(msgDiv);
+
+            if (!isUser && text) {
+                const aiContainer = msgDiv.querySelector(`#${customId || 'ai-text'}`);
+                highlightCodeBlocks(aiContainer);
+            }
+        }
+
+        // Highlight Code Blocks & Add Copy Button
+        function highlightCodeBlocks(container) {
+            if (!container) return;
+            container.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+
+                // Add Copy Button
+                const pre = block.parentElement;
+                if (!pre.querySelector('.copy-btn')) {
+                    pre.style.position = 'relative';
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn absolute top-2 right-2 bg-darkbg-input border border-darkbg-border text-gray-300 text-xs px-2 py-1 rounded hover:bg-brand-600 hover:text-white transition';
+                    copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                    copyBtn.onclick = () => {
+                        copyToClipboard(block.innerText);
+                        copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                        }, 2000);
+                    };
+                    pre.appendChild(copyBtn);
+                }
+            });
+        }
+
+        // Copy Text Function
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        // Speech Voice Reading last AI Answer
+        function speakLastResponse() {
+            if (!lastAiResponse) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(lastAiResponse.replace(/[#*`]/g, ''));
+            utterance.lang = 'ml-IN';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Export Chat to Text File
+        function exportChat() {
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat || chat.messages.length === 0) return;
+
+            let fileContent = `=== OmniAI Chat Export: ${chat.title} ===\n\n`;
+            chat.messages.forEach(m => {
+                fileContent += `[${m.role.toUpperCase()}]:\n${m.text}\n\n-------------------------------\n\n`;
+            });
+
+            const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${chat.title.replace(/[^a-zA-Z0-9]/g, '_')}_history.txt`;
+            link.click();
+        }
+
+        // Helpers
+        function setLoading(isLoading) {
+            const sendBtn = document.getElementById('send-btn');
+            const sendIcon = document.getElementById('send-icon');
+            const loadingIcon = document.getElementById('loading-icon');
+
+            sendBtn.disabled = isLoading;
+            if (isLoading) {
+                sendIcon.classList.add('hidden');
+                loadingIcon.classList.remove('hidden');
+            } else {
+                sendIcon.classList.remove('hidden');
+                loadingIcon.classList.add('hidden');
+            }
+        }
+
+        function scrollToBottom() {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function escapeHtml(text) {
+            return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+        }
+    </script>
+</body>
+</html>
